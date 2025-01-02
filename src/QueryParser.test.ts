@@ -1,7 +1,7 @@
 import { QueryParser } from './QueryParser';
 
 const parser = new QueryParser({
-	modifiers: ['!'],
+	modifiers: ['!', '-'],
 });
 
 test('Single word', () => {
@@ -68,15 +68,11 @@ test(
 	{ fails: true },
 );
 
-test(
-	'Custom modifiers',
-	() => {
-		expect(parser.parse(`-label:foo`)).toEqual([
-			{ keyword: 'label', value: 'foo', modifier: '-' },
-		]);
-	},
-	{ todo: true },
-);
+test('Custom modifiers', () => {
+	expect(parser.parse(`-label:foo`)).toEqual([
+		{ keyword: 'label', value: 'foo', modifier: '-' },
+	]);
+});
 
 test('Complex query', () => {
 	expect(
