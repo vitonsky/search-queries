@@ -1,21 +1,32 @@
+import { escapeString } from './utils/regex';
+
 export interface ParsedItem {
 	keyword?: string;
 	value: string;
 	modifier?: string;
 }
 
-/**
- * Escape function to handle escaped characters like \"
- */
-export const escapeString = (value: string) => {
-	return value.replace(/\\('|")/g, '$1'); // Unescape escaped quotes
+export const getOptionalModifier = (modifiers: string[]) => {
+	if (escapeString.length === 0) return '';
+
+	return `(?:${modifiers.map(escapeString).join('|')})?`;
+};
+
+type Options = {
+	modifiers?: string[];
 };
 
 export class QueryParser {
+	private readonly options;
+	constructor(options?: Options) {
+		this.options = options ?? {};
+	}
+
 	// Parse a key-value pair with optional modifier, handling quoted values correctly
 	private parseKeyValuePair(pair: string): ParsedItem {
 		// Match for key-value pair with possible modifier and quoted value
-		const regex = /^(!?)(\w+):"(.*)"$/;
+		const modifiers = getOptionalModifier(this.options.modifiers ?? []);
+		const regex = new RegExp(`^(${modifiers})(\\w+):"(.*)"$`);
 		let match = pair.match(regex);
 
 		if (match) {
@@ -28,7 +39,7 @@ export class QueryParser {
 		}
 
 		// Match for key-value pair with possible modifier and simple value
-		const simpleRegex = /^(!?)(\w+):(\S+)$/;
+		const simpleRegex = new RegExp(`^(${modifiers})(\\w+):(\\S+)$`);
 		match = pair.match(simpleRegex);
 
 		if (match) {
@@ -77,7 +88,11 @@ export class QueryParser {
 		let lastIndex = 0; // Keep track of the last processed index in the string
 
 		// Regex to capture key-value pairs (including quoted values)
-		const pairRegex = /(!?\w+:"(?:[^"\\]|\\.)*"|!?\w+:\S+)/g;
+		const modifiers = getOptionalModifier(this.options.modifiers ?? []);
+		const pairRegex = new RegExp(
+			`(${modifiers}\\w+:"(?:[^"\\\\]|\\\\.)*"|${modifiers}\\w+:\\S+)`,
+			'g',
+		);
 
 		let match;
 		while ((match = pairRegex.exec(query)) !== null) {

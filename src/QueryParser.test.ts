@@ -1,6 +1,8 @@
 import { QueryParser } from './QueryParser';
 
-const parser = new QueryParser();
+const parser = new QueryParser({
+	modifiers: ['!'],
+});
 
 test('Single word', () => {
 	expect(parser.parse(`foo`)).toEqual([{ value: 'foo' }]);
