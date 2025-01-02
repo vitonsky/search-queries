@@ -1,6 +1,6 @@
 {
 	"name": "search-queries",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"type": "module",
 	"description": "Simple and powerful search query parser",
 	"keywords": [
