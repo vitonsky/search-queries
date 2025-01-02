@@ -9,7 +9,9 @@ import { QueryParser } from 'search-queries';
 
 const parser = new QueryParser({ modifiers: ['!', '-'] });
 
-const query = parser.parse(`fancy words label:foo -label:bar and "multiple words string" -"excluded phrase"`);
+const query = parser.parse(
+  `fancy words label:foo -label:bar and "multiple words string" -"excluded phrase"`
+);
 
 // Yield object equal to
 expect(query).toEqual([
