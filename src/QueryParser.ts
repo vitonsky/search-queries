@@ -12,6 +12,19 @@ export const getOptionalModifier = (modifiers: string[]) => {
 	return `(?:${modifiers.map(escapeString).join('|')})?`;
 };
 
+export const formatSegment = (item: ParsedItem) => {
+	const newItem: ParsedItem = { value: item.value };
+
+	if (item.keyword) {
+		newItem.keyword = item.keyword;
+	}
+	if (item.modifier) {
+		newItem.modifier = item.modifier;
+	}
+
+	return newItem;
+};
+
 type Options = {
 	modifiers?: string[];
 };
@@ -51,34 +64,57 @@ export class QueryParser {
 	}
 
 	// Parse raw text, capturing everything that's not part of a key-value pair
-	private parseRawText(text: string): ParsedItem {
+	private parseRawText(text: string): string {
 		// Remove leading and trailing quotes if they exist
 		const unquoted = text.replace(/^"|"$/g, '');
-		return { value: escapeString(unquoted.trim()) }; // Trim and escape text
+		return escapeString(unquoted.trim()); // Trim and escape text
 	}
 
 	// Helper method to split text by spaces while preserving quoted sections
-	private splitByQuotes(text: string): string[] {
-		const result = [];
+	private splitByQuotes(
+		text: string,
+		prepareText?: (text: string) => string,
+	): ParsedItem[] {
+		const result: ParsedItem[] = [];
 		let currentWord = '';
 		let inQuotes = false;
+		let currentModifier = '';
 
 		for (let i = 0; i < text.length; i++) {
-			if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
+			if (
+				this.options.modifiers &&
+				this.options.modifiers.includes(text[i]) &&
+				!inQuotes &&
+				currentWord === ''
+			) {
+				currentModifier = text[i];
+			} else if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
 				// If we're not in quotes, start; if we are, end
 				inQuotes = !inQuotes;
 				currentWord += text[i];
 			} else if (text[i] === ' ' && !inQuotes) {
 				if (currentWord) {
-					result.push(currentWord);
+					result.push(
+						formatSegment({
+							value: prepareText ? prepareText(currentWord) : currentWord,
+							modifier: currentModifier,
+						}),
+					);
 					currentWord = '';
+					currentModifier = '';
 				}
 			} else {
 				currentWord += text[i];
 			}
 		}
 
-		if (currentWord) result.push(currentWord);
+		if (currentWord)
+			result.push(
+				formatSegment({
+					value: prepareText ? prepareText(currentWord) : currentWord,
+					modifier: currentModifier,
+				}),
+			);
 		return result;
 	}
 
@@ -100,10 +136,7 @@ export class QueryParser {
 			if (match.index > lastIndex) {
 				const rawSegment = query.slice(lastIndex, match.index).trim();
 				if (rawSegment) {
-					const rawWords = this.splitByQuotes(rawSegment);
-					for (const word of rawWords) {
-						result.push(this.parseRawText(word));
-					}
+					result.push(...this.splitByQuotes(rawSegment, this.parseRawText));
 				}
 			}
 
@@ -116,10 +149,7 @@ export class QueryParser {
 		if (lastIndex < query.length) {
 			const remainingRawText = query.slice(lastIndex).trim();
 			if (remainingRawText) {
-				const rawWords = this.splitByQuotes(remainingRawText);
-				for (const word of rawWords) {
-					result.push(this.parseRawText(word));
-				}
+				result.push(...this.splitByQuotes(remainingRawText, this.parseRawText));
 			}
 		}
 

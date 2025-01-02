@@ -30,6 +30,13 @@ test('Many terms with many words', () => {
 	]);
 });
 
+test('Terms with no keyword supports modifiers', () => {
+	expect(parser.parse(`-foo !"multi words term"`)).toEqual([
+		{ value: 'foo', modifier: '-' },
+		{ value: 'multi words term', modifier: '!' },
+	]);
+});
+
 test('Single keyword', () => {
 	expect(parser.parse(`label:foo`)).toEqual([{ keyword: 'label', value: 'foo' }]);
 });
