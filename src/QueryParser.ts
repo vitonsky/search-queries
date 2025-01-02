@@ -4,12 +4,14 @@ export interface ParsedItem {
 	modifier?: string;
 }
 
-export class QueryParser {
-	// Escape function to handle escaped characters like \"
-	private escapeString(value: string): string {
-		return value.replace(/\\"/g, '"'); // Unescape escaped quotes
-	}
+/**
+ * Escape function to handle escaped characters like \"
+ */
+export const escapeString = (value: string) => {
+	return value.replace(/\\('|")/g, '$1'); // Unescape escaped quotes
+};
 
+export class QueryParser {
 	// Parse a key-value pair with optional modifier, handling quoted values correctly
 	private parseKeyValuePair(pair: string): ParsedItem {
 		// Match for key-value pair with possible modifier and quoted value
@@ -20,7 +22,7 @@ export class QueryParser {
 			const [_, modifier, keyword, value] = match;
 			return {
 				keyword,
-				value: this.escapeString(value),
+				value: escapeString(value),
 				modifier: modifier || undefined,
 			};
 		}
@@ -41,7 +43,7 @@ export class QueryParser {
 	private parseRawText(text: string): ParsedItem {
 		// Remove leading and trailing quotes if they exist
 		const unquoted = text.replace(/^"|"$/g, '');
-		return { value: this.escapeString(unquoted.trim()) }; // Trim and escape text
+		return { value: escapeString(unquoted.trim()) }; // Trim and escape text
 	}
 
 	// Helper method to split text by spaces while preserving quoted sections
