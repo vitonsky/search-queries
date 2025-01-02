@@ -81,18 +81,33 @@ export class QueryParser {
 		let currentModifier = '';
 
 		for (let i = 0; i < text.length; i++) {
-			if (
-				this.options.modifiers &&
-				this.options.modifiers.includes(text[i]) &&
-				!inQuotes &&
-				currentWord === ''
-			) {
-				currentModifier = text[i];
-			} else if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
+			// Enter to quotes mode
+			if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
 				// If we're not in quotes, start; if we are, end
 				inQuotes = !inQuotes;
 				currentWord += text[i];
-			} else if (text[i] === ' ' && !inQuotes) {
+				continue;
+			}
+
+			// Add modifier
+			if (this.options.modifiers && !inQuotes) {
+				// Single char modifier
+				if (currentWord === '' && this.options.modifiers.includes(text[i])) {
+					currentModifier = text[i];
+					continue;
+				}
+
+				// Multi chars modifier
+				const joinedWord = currentWord + text[i];
+				if (this.options.modifiers.includes(joinedWord)) {
+					currentModifier = joinedWord;
+					currentWord = '';
+					continue;
+				}
+			}
+
+			// Space
+			if (text[i] === ' ' && !inQuotes) {
 				if (currentWord) {
 					result.push(
 						formatSegment({
@@ -103,9 +118,10 @@ export class QueryParser {
 					currentWord = '';
 					currentModifier = '';
 				}
-			} else {
-				currentWord += text[i];
+				continue;
 			}
+
+			currentWord += text[i];
 		}
 
 		if (currentWord)
