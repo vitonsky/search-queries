@@ -1,4 +1,4 @@
-import { escapeString } from './utils/regex';
+import { escapeRegex, escapeString } from './utils/regex';
 
 export interface ParsedItem {
 	keyword?: string;
@@ -9,7 +9,7 @@ export interface ParsedItem {
 export const getOptionalModifier = (modifiers: string[]) => {
 	if (escapeString.length === 0) return '';
 
-	return `(?:${modifiers.map(escapeString).join('|')})?`;
+	return `(?:${modifiers.map(escapeRegex).join('|')})?`;
 };
 
 export const formatSegment = (item: ParsedItem) => {
