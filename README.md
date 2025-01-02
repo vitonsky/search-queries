@@ -7,12 +7,18 @@ Simple and powerful parser for advanced search queries like [GitHub search queri
 ```ts
 import { QueryParser } from 'search-queries';
 
-const query = QueryParser.parse(`label:foo !label:bar`);
+const parser = new QueryParser({ modifiers: ['!', '-'] });
+
+const query = parser.parse(`fancy words label:foo -label:bar and "multiple words string"`);
 
 // Yield object equal to
 expect(query).toEqual([
+  { value: 'fancy' },
+  { value: 'words' },
   { keyword: 'label', value: 'foo' },
-  { keyword: 'label', value: 'bar', modifier: '!' },
+  { keyword: 'label', value: 'bar', modifier: '-' },
+  { value: 'and' },
+  { value: 'multiple words string' },
 ]);
 ```
 
