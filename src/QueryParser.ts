@@ -6,12 +6,12 @@ export interface ParsedItem {
 
 export class QueryParser {
 	// Escape function to handle escaped characters like \"
-	private static escapeString(value: string): string {
+	private escapeString(value: string): string {
 		return value.replace(/\\"/g, '"'); // Unescape escaped quotes
 	}
 
 	// Parse a key-value pair with optional modifier, handling quoted values correctly
-	private static parseKeyValuePair(pair: string): ParsedItem {
+	private parseKeyValuePair(pair: string): ParsedItem {
 		// Match for key-value pair with possible modifier and quoted value
 		const regex = /^(!?)(\w+):"(.*)"$/;
 		let match = pair.match(regex);
@@ -38,14 +38,14 @@ export class QueryParser {
 	}
 
 	// Parse raw text, capturing everything that's not part of a key-value pair
-	private static parseRawText(text: string): ParsedItem {
+	private parseRawText(text: string): ParsedItem {
 		// Remove leading and trailing quotes if they exist
 		const unquoted = text.replace(/^"|"$/g, '');
 		return { value: this.escapeString(unquoted.trim()) }; // Trim and escape text
 	}
 
 	// Helper method to split text by spaces while preserving quoted sections
-	private static splitByQuotes(text: string): string[] {
+	private splitByQuotes(text: string): string[] {
 		const result = [];
 		let currentWord = '';
 		let inQuotes = false;
@@ -70,7 +70,7 @@ export class QueryParser {
 	}
 
 	// Main parsing method that processes the entire query string
-	public static parse(query: string): ParsedItem[] {
+	public parse(query: string): ParsedItem[] {
 		const result: ParsedItem[] = [];
 		let lastIndex = 0; // Keep track of the last processed index in the string
 

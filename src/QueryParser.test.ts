@@ -1,13 +1,15 @@
 import { QueryParser } from './QueryParser';
 
+const parser = new QueryParser();
+
 test('Single word', () => {
-	expect(QueryParser.parse(`foo`)).toEqual([{ value: 'foo' }]);
+	expect(parser.parse(`foo`)).toEqual([{ value: 'foo' }]);
 });
 
 test('Many words', () => {
-	expect(QueryParser.parse(`foo bar`)).toEqual([{ value: 'foo' }, { value: 'bar' }]);
+	expect(parser.parse(`foo bar`)).toEqual([{ value: 'foo' }, { value: 'bar' }]);
 
-	expect(QueryParser.parse(`foo bar baz`)).toEqual([
+	expect(parser.parse(`foo bar baz`)).toEqual([
 		{ value: 'foo' },
 		{ value: 'bar' },
 		{ value: 'baz' },
@@ -15,11 +17,11 @@ test('Many words', () => {
 });
 
 test('Single term with many words', () => {
-	expect(QueryParser.parse(`"foo bar"`)).toEqual([{ value: 'foo bar' }]);
+	expect(parser.parse(`"foo bar"`)).toEqual([{ value: 'foo bar' }]);
 });
 
 test('Many terms with many words', () => {
-	expect(QueryParser.parse(`"foo bar" and "baz qux"`)).toEqual([
+	expect(parser.parse(`"foo bar" and "baz qux"`)).toEqual([
 		{ value: 'foo bar' },
 		{ value: 'and' },
 		{ value: 'baz qux' },
@@ -27,30 +29,30 @@ test('Many terms with many words', () => {
 });
 
 test('Single keyword', () => {
-	expect(QueryParser.parse(`label:foo`)).toEqual([{ keyword: 'label', value: 'foo' }]);
+	expect(parser.parse(`label:foo`)).toEqual([{ keyword: 'label', value: 'foo' }]);
 });
 test('Single keyword term with multiple words', () => {
-	expect(QueryParser.parse(`label:"foo bar"`)).toEqual([
+	expect(parser.parse(`label:"foo bar"`)).toEqual([
 		{ keyword: 'label', value: 'foo bar' },
 	]);
 });
 
 test('Many keywords', () => {
-	expect(QueryParser.parse(`label:foo label:bar`)).toEqual([
+	expect(parser.parse(`label:foo label:bar`)).toEqual([
 		{ keyword: 'label', value: 'foo' },
 		{ keyword: 'label', value: 'bar' },
 	]);
 });
 
 test('Many keyword terms with multiple words', () => {
-	expect(QueryParser.parse(`label:"foo bar" label:"baz qux"`)).toEqual([
+	expect(parser.parse(`label:"foo bar" label:"baz qux"`)).toEqual([
 		{ keyword: 'label', value: 'foo bar' },
 		{ keyword: 'label', value: 'baz qux' },
 	]);
 });
 
 test('Keywords with modifiers', () => {
-	expect(QueryParser.parse(`!label:foo label:bar`)).toEqual([
+	expect(parser.parse(`!label:foo label:bar`)).toEqual([
 		{ keyword: 'label', value: 'foo', modifier: '!' },
 		{ keyword: 'label', value: 'bar' },
 	]);
@@ -59,7 +61,7 @@ test('Keywords with modifiers', () => {
 test(
 	'Words with escaped quotes',
 	() => {
-		expect(QueryParser.parse(`\\"foo\\"`)).toEqual([{ value: '\\"foo\\"' }]);
+		expect(parser.parse(`\\"foo\\"`)).toEqual([{ value: '\\"foo\\"' }]);
 	},
 	{ fails: true },
 );
@@ -67,7 +69,7 @@ test(
 test(
 	'Custom modifiers',
 	() => {
-		expect(QueryParser.parse(`-label:foo`)).toEqual([
+		expect(parser.parse(`-label:foo`)).toEqual([
 			{ keyword: 'label', value: 'foo', modifier: '-' },
 		]);
 	},
@@ -76,7 +78,7 @@ test(
 
 test('Complex query', () => {
 	expect(
-		QueryParser.parse(
+		parser.parse(
 			`label:foo !label:"bar with space" some text text:"bug fix and \\" symbol" "both foo and bar and even \\"\\"\\" symbol" fancy "py"j"am\'a w\'ear"`,
 		),
 	).toEqual([
