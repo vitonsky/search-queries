@@ -1,7 +1,7 @@
 import { QueryParser } from './QueryParser';
 
 const parser = new QueryParser({
-	modifiers: ['!', '-'],
+	modifiers: ['!', '-', '+++'],
 });
 
 test('Single word', () => {
@@ -27,6 +27,27 @@ test('Many terms with many words', () => {
 		{ value: 'foo bar' },
 		{ value: 'and' },
 		{ value: 'baz qux' },
+	]);
+});
+
+test('Terms with no keyword supports modifiers', () => {
+	expect(parser.parse(`-foo !"multi words term"`)).toEqual([
+		{ value: 'foo', modifier: '-' },
+		{ value: 'multi words term', modifier: '!' },
+	]);
+});
+
+test('Terms with keyword supports multi-char modifiers', () => {
+	expect(parser.parse(`+++label:foo +++label:"multi words term"`)).toEqual([
+		{ keyword: 'label', value: 'foo', modifier: '+++' },
+		{ keyword: 'label', value: 'multi words term', modifier: '+++' },
+	]);
+});
+
+test('Terms with no keyword supports multi-char modifiers', () => {
+	expect(parser.parse(`+++foo +++"multi words term"`)).toEqual([
+		{ value: 'foo', modifier: '+++' },
+		{ value: 'multi words term', modifier: '+++' },
 	]);
 });
 

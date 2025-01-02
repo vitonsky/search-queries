@@ -1,4 +1,4 @@
-import { escapeString } from './utils/regex';
+import { escapeRegex, escapeString } from './utils/regex';
 
 export interface ParsedItem {
 	keyword?: string;
@@ -9,7 +9,20 @@ export interface ParsedItem {
 export const getOptionalModifier = (modifiers: string[]) => {
 	if (escapeString.length === 0) return '';
 
-	return `(?:${modifiers.map(escapeString).join('|')})?`;
+	return `(?:${modifiers.map(escapeRegex).join('|')})?`;
+};
+
+export const formatSegment = (item: ParsedItem) => {
+	const newItem: ParsedItem = { value: item.value };
+
+	if (item.keyword) {
+		newItem.keyword = item.keyword;
+	}
+	if (item.modifier) {
+		newItem.modifier = item.modifier;
+	}
+
+	return newItem;
 };
 
 type Options = {
@@ -51,34 +64,73 @@ export class QueryParser {
 	}
 
 	// Parse raw text, capturing everything that's not part of a key-value pair
-	private parseRawText(text: string): ParsedItem {
+	private parseRawText(text: string): string {
 		// Remove leading and trailing quotes if they exist
 		const unquoted = text.replace(/^"|"$/g, '');
-		return { value: escapeString(unquoted.trim()) }; // Trim and escape text
+		return escapeString(unquoted.trim()); // Trim and escape text
 	}
 
 	// Helper method to split text by spaces while preserving quoted sections
-	private splitByQuotes(text: string): string[] {
-		const result = [];
+	private splitByQuotes(
+		text: string,
+		prepareText?: (text: string) => string,
+	): ParsedItem[] {
+		const result: ParsedItem[] = [];
 		let currentWord = '';
 		let inQuotes = false;
+		let currentModifier = '';
 
 		for (let i = 0; i < text.length; i++) {
+			// Enter to quotes mode
 			if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
 				// If we're not in quotes, start; if we are, end
 				inQuotes = !inQuotes;
 				currentWord += text[i];
-			} else if (text[i] === ' ' && !inQuotes) {
-				if (currentWord) {
-					result.push(currentWord);
-					currentWord = '';
-				}
-			} else {
-				currentWord += text[i];
+				continue;
 			}
+
+			// Add modifier
+			if (this.options.modifiers && !inQuotes) {
+				// Single char modifier
+				if (currentWord === '' && this.options.modifiers.includes(text[i])) {
+					currentModifier = text[i];
+					continue;
+				}
+
+				// Multi chars modifier
+				const joinedWord = currentWord + text[i];
+				if (this.options.modifiers.includes(joinedWord)) {
+					currentModifier = joinedWord;
+					currentWord = '';
+					continue;
+				}
+			}
+
+			// Space
+			if (text[i] === ' ' && !inQuotes) {
+				if (currentWord) {
+					result.push(
+						formatSegment({
+							value: prepareText ? prepareText(currentWord) : currentWord,
+							modifier: currentModifier,
+						}),
+					);
+					currentWord = '';
+					currentModifier = '';
+				}
+				continue;
+			}
+
+			currentWord += text[i];
 		}
 
-		if (currentWord) result.push(currentWord);
+		if (currentWord)
+			result.push(
+				formatSegment({
+					value: prepareText ? prepareText(currentWord) : currentWord,
+					modifier: currentModifier,
+				}),
+			);
 		return result;
 	}
 
@@ -100,10 +152,7 @@ export class QueryParser {
 			if (match.index > lastIndex) {
 				const rawSegment = query.slice(lastIndex, match.index).trim();
 				if (rawSegment) {
-					const rawWords = this.splitByQuotes(rawSegment);
-					for (const word of rawWords) {
-						result.push(this.parseRawText(word));
-					}
+					result.push(...this.splitByQuotes(rawSegment, this.parseRawText));
 				}
 			}
 
@@ -116,10 +165,7 @@ export class QueryParser {
 		if (lastIndex < query.length) {
 			const remainingRawText = query.slice(lastIndex).trim();
 			if (remainingRawText) {
-				const rawWords = this.splitByQuotes(remainingRawText);
-				for (const word of rawWords) {
-					result.push(this.parseRawText(word));
-				}
+				result.push(...this.splitByQuotes(remainingRawText, this.parseRawText));
 			}
 		}
 
