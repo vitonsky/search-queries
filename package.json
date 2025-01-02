@@ -2,7 +2,7 @@
 	"name": "search-queries",
 	"version": "0.2.0",
 	"type": "module",
-	"description": "Simple and powerful search query parser",
+	"description": "Simple and powerful parser for advanced search queries",
 	"keywords": [
 		"search syntax parser",
 		"query syntax parser",
