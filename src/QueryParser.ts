@@ -25,6 +25,8 @@ export const formatSegment = (item: ParsedItem) => {
 	return newItem;
 };
 
+export const isQuote = (text: string) => text === `'` || text === `"`;
+
 type Options = {
 	modifiers?: string[];
 };
@@ -83,7 +85,7 @@ export class QueryParser {
 
 		for (let i = 0; i < text.length; i++) {
 			// Enter to quotes mode
-			if ([`'`, '"'].includes(text[i]) && (i === 0 || text[i - 1] !== '\\')) {
+			if (isQuote(text[i]) && (i === 0 || text[i - 1] !== '\\')) {
 				if (!inQuotes || currentQuote === text[i]) {
 					// If we're not in quotes, start; if we are, end
 					inQuotes = !inQuotes;
