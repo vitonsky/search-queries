@@ -4,6 +4,33 @@ const parser = new QueryParser({
 	modifiers: ['!', '-', '+++'],
 });
 
+describe('Quotes', () => {
+	test('Single quote', () => {
+		expect(parser.parse(`'foo'`)).toEqual([{ value: 'foo' }]);
+	});
+
+	test('Double quotes', () => {
+		expect(parser.parse(`"foo"`)).toEqual([{ value: 'foo' }]);
+	});
+
+	test('Mixed quotes', () => {
+		expect(parser.parse(`"foo" 'bar'`)).toEqual([{ value: 'foo' }, { value: 'bar' }]);
+	});
+
+	test('Nested quotes', () => {
+		expect(parser.parse(`"foo'n bar" 'bar \\'n foo' 'so-called "foo"'`)).toEqual([
+			{ value: "foo'n bar" },
+			{ value: "bar 'n foo" },
+			{ value: `so-called "foo"` },
+		]);
+	});
+
+	test('Escaped quotes', () => {
+		expect(parser.parse(`'the \\' quote'`)).toEqual([{ value: `the ' quote` }]);
+		expect(parser.parse(`"the \\" quote"`)).toEqual([{ value: `the " quote` }]);
+	});
+});
+
 test('Single word', () => {
 	expect(parser.parse(`foo`)).toEqual([{ value: 'foo' }]);
 });

@@ -25,6 +25,8 @@ export const formatSegment = (item: ParsedItem) => {
 	return newItem;
 };
 
+export const isQuote = (text: string) => text === `'` || text === `"`;
+
 type Options = {
 	modifiers?: string[];
 };
@@ -39,11 +41,11 @@ export class QueryParser {
 	private parseKeyValuePair(pair: string): ParsedItem {
 		// Match for key-value pair with possible modifier and quoted value
 		const modifiers = getOptionalModifier(this.options.modifiers ?? []);
-		const regex = new RegExp(`^(${modifiers})(\\w+):"(.*)"$`);
+		const regex = new RegExp(`^(${modifiers})(\\w+):('|")(.*)\\3$`);
 		let match = pair.match(regex);
 
 		if (match) {
-			const [_, modifier, keyword, value] = match;
+			const [_, modifier, keyword, _quote, value] = match;
 			return {
 				keyword,
 				value: escapeString(value),
@@ -66,7 +68,7 @@ export class QueryParser {
 	// Parse raw text, capturing everything that's not part of a key-value pair
 	private parseRawText(text: string): string {
 		// Remove leading and trailing quotes if they exist
-		const unquoted = text.replace(/^"|"$/g, '');
+		const unquoted = text.replace(/^('|")|('|")$/g, '');
 		return escapeString(unquoted.trim()); // Trim and escape text
 	}
 
@@ -78,27 +80,33 @@ export class QueryParser {
 		const result: ParsedItem[] = [];
 		let currentWord = '';
 		let inQuotes = false;
+		let currentQuote = '';
 		let currentModifier = '';
 
 		for (let i = 0; i < text.length; i++) {
+			const currentChar = text[i];
+
 			// Enter to quotes mode
-			if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
-				// If we're not in quotes, start; if we are, end
-				inQuotes = !inQuotes;
-				currentWord += text[i];
-				continue;
+			if (isQuote(currentChar) && (i === 0 || text[i - 1] !== '\\')) {
+				if (!inQuotes || currentQuote === currentChar) {
+					// If we're not in quotes, start; if we are, end
+					inQuotes = !inQuotes;
+					currentQuote = inQuotes ? currentChar : '';
+					currentWord += currentChar;
+					continue;
+				}
 			}
 
 			// Add modifier
 			if (this.options.modifiers && !inQuotes) {
 				// Single char modifier
-				if (currentWord === '' && this.options.modifiers.includes(text[i])) {
-					currentModifier = text[i];
+				if (currentWord === '' && this.options.modifiers.includes(currentChar)) {
+					currentModifier = currentChar;
 					continue;
 				}
 
 				// Multi chars modifier
-				const joinedWord = currentWord + text[i];
+				const joinedWord = currentWord + currentChar;
 				if (this.options.modifiers.includes(joinedWord)) {
 					currentModifier = joinedWord;
 					currentWord = '';
@@ -107,7 +115,7 @@ export class QueryParser {
 			}
 
 			// Space
-			if (text[i] === ' ' && !inQuotes) {
+			if (currentChar === ' ' && !inQuotes) {
 				if (currentWord) {
 					result.push(
 						formatSegment({
@@ -121,7 +129,7 @@ export class QueryParser {
 				continue;
 			}
 
-			currentWord += text[i];
+			currentWord += currentChar;
 		}
 
 		if (currentWord)
@@ -131,6 +139,7 @@ export class QueryParser {
 					modifier: currentModifier,
 				}),
 			);
+
 		return result;
 	}
 
@@ -142,7 +151,7 @@ export class QueryParser {
 		// Regex to capture key-value pairs (including quoted values)
 		const modifiers = getOptionalModifier(this.options.modifiers ?? []);
 		const pairRegex = new RegExp(
-			`(${modifiers}\\w+:"(?:[^"\\\\]|\\\\.)*"|${modifiers}\\w+:\\S+)`,
+			`(${modifiers}\\w+:("|')(?:[^"'\\\\]|\\\\.)*\\2|${modifiers}\\w+:\\S+)`,
 			'g',
 		);
 
