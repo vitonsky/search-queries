@@ -84,13 +84,15 @@ export class QueryParser {
 		let currentModifier = '';
 
 		for (let i = 0; i < text.length; i++) {
+			const currentChar = text[i];
+
 			// Enter to quotes mode
-			if (isQuote(text[i]) && (i === 0 || text[i - 1] !== '\\')) {
-				if (!inQuotes || currentQuote === text[i]) {
+			if (isQuote(currentChar) && (i === 0 || text[i - 1] !== '\\')) {
+				if (!inQuotes || currentQuote === currentChar) {
 					// If we're not in quotes, start; if we are, end
 					inQuotes = !inQuotes;
-					currentQuote = inQuotes ? text[i] : '';
-					currentWord += text[i];
+					currentQuote = inQuotes ? currentChar : '';
+					currentWord += currentChar;
 					continue;
 				}
 			}
@@ -98,13 +100,13 @@ export class QueryParser {
 			// Add modifier
 			if (this.options.modifiers && !inQuotes) {
 				// Single char modifier
-				if (currentWord === '' && this.options.modifiers.includes(text[i])) {
-					currentModifier = text[i];
+				if (currentWord === '' && this.options.modifiers.includes(currentChar)) {
+					currentModifier = currentChar;
 					continue;
 				}
 
 				// Multi chars modifier
-				const joinedWord = currentWord + text[i];
+				const joinedWord = currentWord + currentChar;
 				if (this.options.modifiers.includes(joinedWord)) {
 					currentModifier = joinedWord;
 					currentWord = '';
@@ -113,7 +115,7 @@ export class QueryParser {
 			}
 
 			// Space
-			if (text[i] === ' ' && !inQuotes) {
+			if (currentChar === ' ' && !inQuotes) {
 				if (currentWord) {
 					result.push(
 						formatSegment({
@@ -127,7 +129,7 @@ export class QueryParser {
 				continue;
 			}
 
-			currentWord += text[i];
+			currentWord += currentChar;
 		}
 
 		if (currentWord)
