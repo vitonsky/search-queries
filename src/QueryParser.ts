@@ -39,11 +39,11 @@ export class QueryParser {
 	private parseKeyValuePair(pair: string): ParsedItem {
 		// Match for key-value pair with possible modifier and quoted value
 		const modifiers = getOptionalModifier(this.options.modifiers ?? []);
-		const regex = new RegExp(`^(${modifiers})(\\w+):"(.*)"$`);
+		const regex = new RegExp(`^(${modifiers})(\\w+):('|")(.*)\\3$`);
 		let match = pair.match(regex);
 
 		if (match) {
-			const [_, modifier, keyword, value] = match;
+			const [_, modifier, keyword, _quote, value] = match;
 			return {
 				keyword,
 				value: escapeString(value),
@@ -66,7 +66,7 @@ export class QueryParser {
 	// Parse raw text, capturing everything that's not part of a key-value pair
 	private parseRawText(text: string): string {
 		// Remove leading and trailing quotes if they exist
-		const unquoted = text.replace(/^"|"$/g, '');
+		const unquoted = text.replace(/^('|")|('|")$/g, '');
 		return escapeString(unquoted.trim()); // Trim and escape text
 	}
 
@@ -78,15 +78,19 @@ export class QueryParser {
 		const result: ParsedItem[] = [];
 		let currentWord = '';
 		let inQuotes = false;
+		let currentQuote = '';
 		let currentModifier = '';
 
 		for (let i = 0; i < text.length; i++) {
 			// Enter to quotes mode
-			if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
-				// If we're not in quotes, start; if we are, end
-				inQuotes = !inQuotes;
-				currentWord += text[i];
-				continue;
+			if ([`'`, '"'].includes(text[i]) && (i === 0 || text[i - 1] !== '\\')) {
+				if (!inQuotes || currentQuote === text[i]) {
+					// If we're not in quotes, start; if we are, end
+					inQuotes = !inQuotes;
+					currentQuote = inQuotes ? text[i] : '';
+					currentWord += text[i];
+					continue;
+				}
 			}
 
 			// Add modifier
@@ -131,6 +135,7 @@ export class QueryParser {
 					modifier: currentModifier,
 				}),
 			);
+
 		return result;
 	}
 
@@ -142,7 +147,7 @@ export class QueryParser {
 		// Regex to capture key-value pairs (including quoted values)
 		const modifiers = getOptionalModifier(this.options.modifiers ?? []);
 		const pairRegex = new RegExp(
-			`(${modifiers}\\w+:"(?:[^"\\\\]|\\\\.)*"|${modifiers}\\w+:\\S+)`,
+			`(${modifiers}\\w+:("|')(?:[^"'\\\\]|\\\\.)*\\2|${modifiers}\\w+:\\S+)`,
 			'g',
 		);
 
