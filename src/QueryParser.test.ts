@@ -24,6 +24,11 @@ describe('Quotes', () => {
 			{ value: `so-called "foo"` },
 		]);
 	});
+
+	test('Escaped quotes', () => {
+		expect(parser.parse(`'the \\' quote'`)).toEqual([{ value: `the ' quote` }]);
+		expect(parser.parse(`"the \\" quote"`)).toEqual([{ value: `the " quote` }]);
+	});
 });
 
 test('Single word', () => {
